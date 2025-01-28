@@ -1,11 +1,85 @@
 # compute_horde_sdk
 &nbsp;[![Continuous Integration](https://github.com/backend-developers-ltd/compute-horde-sdk/workflows/Continuous%20Integration/badge.svg)](https://github.com/backend-developers-ltd/compute-horde-sdk/actions?query=workflow%3A%22Continuous+Integration%22)&nbsp;[![License](https://img.shields.io/pypi/l/compute_horde_sdk.svg?label=License)](https://pypi.python.org/pypi/compute_horde_sdk)&nbsp;[![python versions](https://img.shields.io/pypi/pyversions/compute_horde_sdk.svg?label=python%20versions)](https://pypi.python.org/pypi/compute_horde_sdk)&nbsp;[![PyPI version](https://img.shields.io/pypi/v/compute_horde_sdk.svg?label=PyPI%20version)](https://pypi.python.org/pypi/compute_horde_sdk)
 
+## Installation
+
+```
+pip install compute-horde-sdk
+```
+
 ## Usage
+
+Register at https://facilitator.computehorde.io and generate an API token.
 
 > [!IMPORTANT]
 > This package uses [ApiVer](#versioning), make sure to import `compute_horde_sdk.v1`.
 
+Simple example:
+
+```python
+import bittensor
+from compute_horde_sdk.v1 import ComputeHordeClient, ExecutorClass
+
+wallet = bittensor.wallet(name="...", hotkey="...")
+
+compute_horde_client = ComputeHordeClient(
+    hotkey=wallet.hotkey,
+    facilitator_token="MY_COMPUTE_HORDE_FACILITATOR_API_TOKEN",
+)
+
+# Create a job to run on the Compute Horde.
+job = await compute_horde_client.create_job(
+    executor_class=ExecutorClass.always_on__llm__a6000,
+    docker_image="my-username/my-image:latest",
+)
+
+await job.wait(timeout=10 * 60)
+
+print(job.status)  # Should be "Completed".
+```
+
+Advanced example:
+
+```python
+import bittensor
+from compute_horde_sdk.v1 import ComputeHordeClient, ExecutorClass, HuggingfaceInputVolume, HTTPInputVolume, HTTPOutputVolume
+
+wallet = bittensor.wallet(name="...", hotkey="...")
+
+compute_horde_client = ComputeHordeClient(
+    hotkey=wallet.hotkey,
+    facilitator_token="MY_COMPUTE_HORDE_FACILITATOR_API_TOKEN",
+    compute_horde_validator_hotkey="...",  # In the common case it's going to be the same as the ss58 address of the hotkey above.
+)
+
+# Create a job to run on the Compute Horde.
+job = await compute_horde_client.create_job(
+    executor_class=ExecutorClass.always_on__llm__a6000,
+    docker_image="my-username/my-image:latest",
+    args=["main.py", "--block", "10000"],
+    env={"HF_HUB_ENABLE_HF_TRANSFER": "1"},
+    artifacts=["/output/calculated_losses.json"],
+    input_volumes={
+        "/volume/models/model01": HuggingfaceInputVolume(
+            repo_id="my-username/my-model",
+        ),
+        "/volume/data/dataset.json": HTTPInputVolume(
+            url="https://my-dataset-bucket.s3.amazonaws.com/sample-dataset/data.json",
+        ),
+    },
+    output_volumes={
+        "/output/image.png": HTTPOutputVolume(
+            http_method="PUT",
+            url="https://my-image-bucket.s3.amazonaws.com/images/image.png",
+        ),
+    },
+)
+
+await job.wait(timeout=10 * 60)
+
+print(job.status)  # Should be "Completed".
+print(job.result)
+```
 
 ## Versioning
 
