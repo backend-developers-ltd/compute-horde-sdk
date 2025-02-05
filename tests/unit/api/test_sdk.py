@@ -120,12 +120,8 @@ async def test_job_e2e(apiver_module, httpx_mock, keypair, async_sleep_mock):
     assert job.status == "Sent"
     assert_signature(httpx_mock.get_request())
 
-    httpx_mock.add_response(
-        url=TEST_FACILITATOR_URL + "/jobs/" + TEST_JOB_UUID, json=get_job_response(status="Accepted")
-    )
-    httpx_mock.add_response(
-        url=TEST_FACILITATOR_URL + "/jobs/" + TEST_JOB_UUID, json=get_job_response(status="Completed")
-    )
+    httpx_mock.add_response(json=get_job_response(status="Accepted"))
+    httpx_mock.add_response(json=get_job_response(status="Completed"))
 
     await job.wait()
 
@@ -223,10 +219,16 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
         artifacts_dir="/artifacts",
         input_volumes={
             "/volume/models/model01": apiver_module.HuggingfaceInputVolume(repo_id="myrepo/mymodel"),
+            "/volume/dataset.json": apiver_module.HTTPInputVolume(
+                url="https://s3.aws.something.com/mybucket/myfile.json"
+            ),
         },
         output_volumes={
             "/output/results.json": apiver_module.HTTPOutputVolume(
                 http_method="PUT", url="https://s3.aws.something.com/mybucket/myfile.json"
+            ),
+            "/output/image.png": apiver_module.HTTPOutputVolume(
+                http_method="POST", url="https://s3.aws.something.com/mybucket/images"
             ),
         },
     )
@@ -249,6 +251,11 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
             "revision": None,
             "allow_patterns": None,
         },
+        {
+            "volume_type": "single_file",
+            "relative_path": "dataset.json",
+            "url": "https://s3.aws.something.com/mybucket/myfile.json",
+        },
     ]
     assert req_json["uploads"] == [
         {
@@ -256,6 +263,13 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
             "relative_path": "results.json",
             "url": "https://s3.aws.something.com/mybucket/myfile.json",
             "signed_headers": None,
+        },
+        {
+            "output_upload_type": "single_file_post",
+            "relative_path": "image.png",
+            "form_fields": None,
+            "signed_headers": None,
+            "url": "https://s3.aws.something.com/mybucket/images",
         },
     ]
 

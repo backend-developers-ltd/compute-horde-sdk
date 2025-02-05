@@ -264,7 +264,7 @@ class ComputeHordeClient:
         """
         logger.debug("Fetching job with UUID=%s", job_uuid)
 
-        response = await self._make_request("GET", f"/jobs/{job_uuid}")
+        response = await self._make_request("GET", f"/jobs/{job_uuid}/")
 
         try:
             job_response = FacilitatorJobResponse.model_validate_json(response)
