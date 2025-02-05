@@ -172,10 +172,11 @@ class ComputeHordeClient:
     async def create_job(
         self,
         executor_class: ExecutorClass,
+        job_namespace: str,
         docker_image: str,
         args: Sequence[str] | None = None,
         env: Mapping[str, str] | None = None,
-        artifacts: Sequence[str] | None = None,
+        artifacts_dir: str | None = None,
         input_volumes: Mapping[str, InputVolume] | None = None,
         output_volumes: Mapping[str, OutputVolume] | None = None,
         run_cross_validation: bool = False,
@@ -186,11 +187,14 @@ class ComputeHordeClient:
         Create a new job to run in the Compute Horde.
 
         :param executor_class: Class of the executor machine to run the job on.
+        :param job_namespace: Specifies where the job comes from.
+            The recommended format is the subnet number and version, like e.g. ``"SN123.0"``.
         :param docker_image: Docker image of the job, in the form of ``user/image:tag``.
         :param args: Positional arguments and flags to run the job with.
         :param env: Environment variables to run the job with.
-        :param artifacts: Paths of the files that the job will write its results to.
-            The contents of these files will be returned after the job completes as a part of the job result.
+        :param artifacts_dir: Path of the directory that the job will write its results to.
+            Contents of files found in this directory will be returned after the job completes
+            as a part of the job result. It should be an absolute path (starting with ``/``).
         :param input_volumes: The data to be made available to the job in Docker volumes.
             The keys should be absolute file/directory paths under which you want your data to be available.
             The values should be ``InputVolume`` instances representing how to obtain the input data.

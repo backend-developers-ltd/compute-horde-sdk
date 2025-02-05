@@ -112,6 +112,7 @@ async def test_job_e2e(apiver_module, httpx_mock, keypair, async_sleep_mock):
 
     job = await client.create_job(
         executor_class=apiver_module.ExecutorClass.spin_up_4min__gpu_24gb,
+        job_namespace="SN123.0",
         docker_image=TEST_DOCKER_IMAGE,
     )
 
@@ -215,10 +216,11 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
 
     job = await compute_horde_client.create_job(
         executor_class=apiver_module.ExecutorClass.spin_up_4min__gpu_24gb,
+        job_namespace="SN123.0",
         docker_image=TEST_DOCKER_IMAGE,
         args=["--block", "10000"],
         env={"TEST_ENV": "1"},
-        artifacts=["/output/result.json"],
+        artifacts_dir="/artifacts",
         input_volumes={
             "/volume/models/model01": apiver_module.HuggingfaceInputVolume(repo_id="myrepo/mymodel"),
         },
@@ -265,6 +267,7 @@ async def test_create_job__http_error(apiver_module, compute_horde_client, httpx
     with pytest.raises(apiver_module.ComputeHordeError):
         await compute_horde_client.create_job(
             executor_class=apiver_module.ExecutorClass.spin_up_4min__gpu_24gb,
+            job_namespace="SN123.0",
             docker_image=TEST_DOCKER_IMAGE,
         )
 
@@ -276,6 +279,7 @@ async def test_create_job__malformed_response(apiver_module, compute_horde_clien
     with pytest.raises(apiver_module.ComputeHordeError):
         await compute_horde_client.create_job(
             executor_class=apiver_module.ExecutorClass.spin_up_4min__gpu_24gb,
+            job_namespace="SN123.0",
             docker_image=TEST_DOCKER_IMAGE,
         )
 

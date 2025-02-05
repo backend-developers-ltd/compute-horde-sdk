@@ -30,6 +30,7 @@ compute_horde_client = ComputeHordeClient(
 # Create a job to run on the Compute Horde.
 job = await compute_horde_client.create_job(
     executor_class=ExecutorClass.always_on__llm__a6000,
+    job_namespace="SN123.0",
     docker_image="my-username/my-image:latest",
 )
 
@@ -55,10 +56,11 @@ compute_horde_client = ComputeHordeClient(
 # Create a job to run on the Compute Horde.
 job = await compute_horde_client.create_job(
     executor_class=ExecutorClass.always_on__llm__a6000,
+    job_namespace="SN123.0",
     docker_image="my-username/my-image:latest",
     args=["main.py", "--block", "10000"],
     env={"HF_HUB_ENABLE_HF_TRANSFER": "1"},
-    artifacts=["/output/calculated_losses.json"],
+    artifacts_dir="/artifacts",
     input_volumes={
         "/volume/models/model01": HuggingfaceInputVolume(
             repo_id="my-username/my-model",
