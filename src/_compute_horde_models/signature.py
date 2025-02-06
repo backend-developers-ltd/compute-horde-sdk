@@ -1,5 +1,6 @@
 import abc
 import base64
+import datetime
 import hashlib
 import json
 import re
@@ -56,6 +57,28 @@ class SignedFields(BaseModel):
         return signed_fields
 
 
+def signature_from_headers(headers: dict[str, str], prefix: str = "X-CH-") -> Signature:
+    """
+    Extracts the signature from the headers
+
+    :param headers: headers dict
+    :return: Signature object
+    """
+    try:
+        return Signature(
+            signature_type=headers[f"{prefix}Signature-Type"],
+            signatory=headers[f"{prefix}Signatory"],
+            timestamp_ns=int(headers[f"{prefix}Timestamp-NS"]),
+            signature=headers[f"{prefix}Signature"].encode("utf-8"),
+        )
+    except (
+        KeyError,
+        ValueError,
+        TypeError,
+    ) as e:
+        raise SignatureNotFound("Signature not found in headers") from e
+
+
 def signature_to_headers(signature: Signature, prefix: str = "X-CH-") -> dict[str, str]:
     """
     Converts the signature to headers
@@ -69,6 +92,22 @@ def signature_to_headers(signature: Signature, prefix: str = "X-CH-") -> dict[st
         f"{prefix}Timestamp-NS": str(signature.timestamp_ns),
         f"{prefix}Signature": base64.b64encode(signature.signature).decode("utf-8"),
     }
+
+
+class SignatureException(Exception):
+    pass
+
+
+class SignatureNotFound(SignatureException):
+    pass
+
+
+class SignatureInvalidException(SignatureException):
+    pass
+
+
+class SignatureTimeoutException(SignatureInvalidException):
+    pass
 
 
 def hash_message_signature(payload: bytes | JsonValue, signature: Signature) -> bytes:
@@ -143,9 +182,30 @@ class Signer(SignatureScheme):
         raise NotImplementedError
 
 
-class BittensorWalletSigner(Signer):
+class Verifier(SignatureScheme):
+    def verify(
+        self,
+        payload: JsonValue | bytes,
+        signature: Signature,
+        newer_than: datetime.datetime | None = None,
+    ):
+        payload_hash = hash_message_signature(payload, signature)
+        self._verify(payload_hash, signature)
+
+        if newer_than is not None:
+            if newer_than > datetime.datetime.fromtimestamp(signature.timestamp_ns / 1_000_000_000):
+                raise SignatureTimeoutException("Signature is too old")
+
+    @abc.abstractmethod
+    def _verify(self, payload: bytes, signature: Signature) -> None:
+        raise NotImplementedError
+
+
+class BittensorSignatureScheme:
     signature_type = "bittensor"
 
+
+class BittensorWalletSigner(BittensorSignatureScheme, Signer):
     def __init__(self, wallet: bittensor.wallet | bittensor.Keypair | None = None):
         if isinstance(wallet, bittensor.Keypair):
             keypair = wallet
@@ -160,3 +220,16 @@ class BittensorWalletSigner(Signer):
     def get_signatory(self) -> str:
         signatory: str = self._keypair.ss58_address
         return signatory
+
+
+class BittensorWalletVerifier(BittensorSignatureScheme, Verifier):
+    def _verify(self, payload: bytes, signature: Signature) -> None:
+        try:
+            keypair = bittensor.Keypair(ss58_address=signature.signatory)
+        except ValueError:
+            raise SignatureInvalidException("Invalid signatory for BittensorWalletVerifier")
+        try:
+            if not keypair.verify(data=payload, signature=signature.signature):
+                raise SignatureInvalidException("Signature is invalid")
+        except (ValueError, TypeError) as e:
+            raise SignatureInvalidException("Signature is malformed") from e

@@ -4,8 +4,12 @@ from typing import TYPE_CHECKING
 import bittensor
 import httpx
 import pytest
-from compute_horde.fv_protocol.facilitator_requests import SignedFields
-from compute_horde.signature import VERIFIERS_REGISTRY, SignatureInvalidException, signature_from_headers
+
+from _compute_horde_models.signature import (
+    BittensorWalletVerifier,
+    SignedFields,
+    signature_from_headers,
+)
 
 if TYPE_CHECKING:
     from compute_horde_sdk._internal.sdk import ComputeHordeClient, ComputeHordeJob
@@ -52,10 +56,7 @@ def assert_signature(request: httpx.Request):
     :raises SignatureInvalidException: if the signature is invalid
     """
     signature = signature_from_headers(request.headers)  # type: ignore
-    try:
-        verifier = VERIFIERS_REGISTRY.get(signature.signature_type)
-    except KeyError:
-        raise SignatureInvalidException(f"Invalid signature type: {signature.signature_type}")
+    verifier = BittensorWalletVerifier()
     try:
         json_body = json.loads(request.content)
     except ValueError:

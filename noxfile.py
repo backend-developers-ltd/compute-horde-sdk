@@ -17,7 +17,7 @@ CI = os.environ.get("CI") is not None
 
 ROOT = Path(".")
 MAIN_BRANCH_NAME = "master"
-PYTHON_VERSIONS = ["3.11"]
+PYTHON_VERSIONS = ["3.11", "3.12"]
 BITTENSOR_VERSION = os.environ.get("BITTENSOR_VERSION")
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 

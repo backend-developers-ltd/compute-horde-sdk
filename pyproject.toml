@@ -1,6 +1,6 @@
 [project]
 name = "compute-horde-sdk"
-requires-python = "==3.11.*"
+requires-python = ">=3.11"
 keywords = []
 license = {text = "MIT"}
 readme = "README.md"
@@ -46,7 +46,7 @@ test = [
     "pytest-asyncio",
     "pytest-xdist",
     "pytest-httpx>=0.35.0",
-    "compute-horde>=0.0.21",
+#    "compute-horde>=0.0.21",
 ]
 lint = [
     "codespell[toml]",
