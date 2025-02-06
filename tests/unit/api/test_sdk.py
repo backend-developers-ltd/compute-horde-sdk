@@ -136,10 +136,13 @@ async def test_get_jobs(apiver_module, compute_horde_client, httpx_mock):
     job2_status = "Failed"
     httpx_mock.add_response(
         json={
+            "count": 2,
+            "previous": None,
+            "next": None,
             "results": [
                 get_job_response(uuid=job1_uuid, status=job1_status),
                 get_job_response(uuid=job2_uuid, status=job2_status),
-            ]
+            ],
         }
     )
 
@@ -161,11 +164,73 @@ async def test_get_jobs__http_error(apiver_module, compute_horde_client, httpx_m
 
 
 @pytest.mark.asyncio
+async def test_get_jobs__not_found(apiver_module, compute_horde_client, httpx_mock):
+    httpx_mock.add_response(status_code=404)
+
+    with pytest.raises(apiver_module.ComputeHordeNotFoundError):
+        await compute_horde_client.get_jobs()
+
+
+@pytest.mark.asyncio
 async def test_get_jobs__malformed_response(apiver_module, compute_horde_client, httpx_mock):
     httpx_mock.add_response(json=[{"derp": "dunno"}])
 
     with pytest.raises(apiver_module.ComputeHordeError):
         await compute_horde_client.get_jobs()
+
+
+@pytest.mark.asyncio
+async def test_iter_jobs(apiver_module, compute_horde_client, httpx_mock):
+    job1_uuid = "7b522daa-e807-4094-8d96-99b9a863f960"
+    job1_status = "Accepted"
+    job2_uuid = "6b6b4ef2-5174-4a45-ae2f-8bfae3915168"
+    job2_status = "Failed"
+    httpx_mock.add_response(
+        json={
+            "count": 11,
+            "previous": None,
+            "next": f"{TEST_FACILITATOR_URL}/jobs/?page=2",
+            "results": [get_job_response(uuid=job1_uuid, status=job1_status) for _ in range(10)],
+        }
+    )
+    httpx_mock.add_response(
+        json={
+            "count": 11,
+            "previous": f"{TEST_FACILITATOR_URL}/jobs/?page=1",
+            "next": None,
+            "results": [
+                get_job_response(uuid=job2_uuid, status=job2_status),
+            ],
+        }
+    )
+
+    jobs = []
+    async for job in compute_horde_client.iter_jobs():
+        jobs.append(job)
+
+    assert len(jobs) == 11
+    assert jobs[0].uuid == job1_uuid
+    assert jobs[0].status is apiver_module.ComputeHordeJobStatus.ACCEPTED
+    assert jobs[-1].uuid == job2_uuid
+    assert jobs[-1].status is apiver_module.ComputeHordeJobStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_iter_jobs__http_error(apiver_module, compute_horde_client, httpx_mock):
+    httpx_mock.add_response(status_code=400)
+
+    with pytest.raises(apiver_module.ComputeHordeError):
+        async for _ in compute_horde_client.iter_jobs():
+            pass
+
+
+@pytest.mark.asyncio
+async def test_iter_jobs__malformed_response(apiver_module, compute_horde_client, httpx_mock):
+    httpx_mock.add_response(json=[{"derp": "dunno"}])
+
+    with pytest.raises(apiver_module.ComputeHordeError):
+        async for _ in compute_horde_client.iter_jobs():
+            pass
 
 
 @pytest.mark.asyncio
@@ -185,6 +250,14 @@ async def test_get_job__http_error(apiver_module, compute_horde_client, httpx_mo
     httpx_mock.add_response(status_code=400)
 
     with pytest.raises(apiver_module.ComputeHordeError):
+        await compute_horde_client.get_job(TEST_JOB_UUID)
+
+
+@pytest.mark.asyncio
+async def test_get_job__not_found(apiver_module, compute_horde_client, httpx_mock):
+    httpx_mock.add_response(status_code=404)
+
+    with pytest.raises(apiver_module.ComputeHordeNotFoundError):
         await compute_horde_client.get_job(TEST_JOB_UUID)
 
 
@@ -336,7 +409,7 @@ async def test_wait_for_job__timeout(apiver_module, job, httpx_mock, async_sleep
 
 
 @pytest.mark.asyncio
-async def test_wait_for_job__http_error(apiver_module, job, httpx_mock):
+async def test_wait_for_job__http_error(apiver_module, job, httpx_mock, async_sleep_mock):
     httpx_mock.add_response(status_code=400)
 
     with pytest.raises(apiver_module.ComputeHordeError):
@@ -344,7 +417,7 @@ async def test_wait_for_job__http_error(apiver_module, job, httpx_mock):
 
 
 @pytest.mark.asyncio
-async def test_wait_for_job__malformed_response(apiver_module, job, httpx_mock):
+async def test_wait_for_job__malformed_response(apiver_module, job, httpx_mock, async_sleep_mock):
     httpx_mock.add_response(json={"derp": "dunno"})
 
     with pytest.raises(apiver_module.ComputeHordeError):

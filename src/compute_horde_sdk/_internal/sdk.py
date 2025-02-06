@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from datetime import timedelta
 from typing import Self
 
@@ -12,7 +12,7 @@ import pydantic
 from _compute_horde_models.executor_class import ExecutorClass
 from _compute_horde_models.signature import BittensorWalletSigner, SignedFields, signature_to_headers
 
-from .exceptions import ComputeHordeError, ComputeHordeJobTimeoutError
+from .exceptions import ComputeHordeError, ComputeHordeJobTimeoutError, ComputeHordeNotFoundError
 from .models import (
     ComputeHordeJobResult,
     ComputeHordeJobStatus,
@@ -53,15 +53,15 @@ class ComputeHordeJob:
         :param timeout: Maximum number of seconds to wait for.
         :raises ComputeHordeJobTimeoutError: If the job does not complete within ``timeout`` seconds.
         """
-        start_time = time.time()
+        start_time = time.monotonic()
 
         while self.status.is_in_progress():
-            if timeout is not None and time.time() - start_time > timeout:
+            if timeout is not None and time.monotonic() - start_time > timeout:
                 raise ComputeHordeJobTimeoutError(
                     f"Job {self.uuid} did not complete within {timeout} seconds, last status: {self.status}"
                 )
-            await self.refresh_from_facilitator()
             await asyncio.sleep(JOB_REFRESH_INTERVAL.total_seconds())
+            await self.refresh_from_facilitator()
 
     async def refresh_from_facilitator(self) -> None:
         new_job = await self._client.get_job(self.uuid)
@@ -85,11 +85,14 @@ class ComputeHordeJob:
             This can highlight if the job's execution was slower than expected, suggesting performance issues
             on executor side.
         """
-        await self._client._submit_job_feedback(
-            self.uuid,
-            result_correctness=result_correctness,
-            expected_duration=expected_duration,
-        )
+        data = {
+            "result_correctness": result_correctness,
+        }
+        if expected_duration is not None:
+            data["expected_duration"] = expected_duration
+        logger.debug("Submitting feedback for job UUID=%s", self.uuid)
+
+        await self._client._make_request("PUT", f"/jobs/{self.uuid}/feedback/", json=data)
 
     def __repr__(self):
         return f"<{self.__class__.__qualname__}: {self.uuid!r}>"
@@ -160,6 +163,8 @@ class ComputeHordeClient:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             logger.error("Response status=%d: %s", e.response.status_code, e.response.text)
+            if e.response.status_code == 404:
+                raise ComputeHordeNotFoundError(f"Resource under {request.url} not found") from e
             raise ComputeHordeError(f"Compute Horde responded with status code {e.response.status_code}") from e
 
         return response.text
@@ -215,7 +220,7 @@ class ComputeHordeClient:
 
         if run_cross_validation:
             # Or should we remove this argument for now?
-            raise ValueError(
+            raise NotImplementedError(
                 "Cross validation is not supported yet, please call create_job with run_cross_validation=False"
             )
 
@@ -261,6 +266,7 @@ class ComputeHordeClient:
 
         :param job_uuid: The UUID of the job to retrieve.
         :return: A ``ComputeHordeJob`` instance representing this job.
+        :raises ComputeHordeNotFoundError: If the job with this UUID does not exist.
         """
         logger.debug("Fetching job with UUID=%s", job_uuid)
 
@@ -273,16 +279,8 @@ class ComputeHordeClient:
 
         return ComputeHordeJob._from_response(self, job_response)
 
-    async def get_jobs(self, page: int = 1, page_size: int = 10) -> list[ComputeHordeJob]:
-        """
-        Retrieve information about your jobs from the Compute Horde.
-
-        :param page: The page number.
-        :param page_size: The page size.
-        :return: A list of ``ComputeHordeJob`` instances representing your jobs.
-        """
+    async def _get_jobs_page(self, page: int = 1, page_size: int = 10) -> FacilitatorJobsResponse:
         params = {"page": page, "page_size": page_size}
-        logger.debug("Fetching jobs page=%d, page_size%d", page, page_size)
 
         response = await self._make_request("GET", "/jobs/", params=params)
 
@@ -291,19 +289,41 @@ class ComputeHordeClient:
         except pydantic.ValidationError as e:
             raise ComputeHordeError("Compute Horde returned malformed response") from e
 
+        return jobs_response
+
+    async def get_jobs(self, page: int = 1, page_size: int = 10) -> list[ComputeHordeJob]:
+        """
+        Retrieve information about your jobs from the Compute Horde.
+
+        :param page: The page number.
+        :param page_size: The page size.
+        :return: A list of ``ComputeHordeJob`` instances representing your jobs.
+        :raises ComputeHordeNotFoundError: If the requested page does not exist.
+        """
+        logger.debug("Fetching jobs page=%d, page_size%d", page, page_size)
+        jobs_response = await self._get_jobs_page(page=page, page_size=page_size)
+
         return [ComputeHordeJob._from_response(self, job) for job in jobs_response.results]
 
-    async def _submit_job_feedback(
-        self,
-        job_uuid: str,
-        result_correctness: float,
-        expected_duration: float | None = None,
-    ) -> None:
-        data = {
-            "result_correctness": result_correctness,
-        }
-        if expected_duration is not None:
-            data["expected_duration"] = expected_duration
-        logger.debug("Submitting feedback for job UUID=%s", job_uuid)
+    async def iter_jobs(self) -> AsyncIterator[ComputeHordeJob]:
+        """
+        Retrieve information about your jobs from the Compute Horde.
 
-        await self._make_request("PUT", f"/jobs/{job_uuid}/feedback/", json=data)
+        :return: An async iterator of ``ComputeHordeJob`` instances representing your jobs.
+
+        Usage::
+
+            async for job in client.iter_jobs():
+                process(job)
+        """
+        logger.debug("Iterating over jobs.")
+        page = 1
+        page_size = 10
+        has_next_page = True
+        while has_next_page:
+            jobs_response = await self._get_jobs_page(page=page, page_size=page_size)
+            for job_response in jobs_response.results:
+                yield ComputeHordeJob._from_response(self, job_response)
+
+            has_next_page = jobs_response.next is not None
+            page += 1
