@@ -68,32 +68,6 @@ class ComputeHordeJob:
         self.status = new_job.status
         self.result = new_job.result
 
-    async def submit_feedback(
-        self,
-        result_correctness: float,
-        expected_duration: float | None = None,
-    ) -> None:
-        """
-        Submit feedback for this job.
-
-        This can be used to inform the facilitator about the correctness of the job's result.
-
-        :param result_correctness: The correctness of the job's result expressed as a float between 0.0 and 1.0.
-            0.0 indicates 0% correctness (completely incorrect).
-            1.0 indicates 100% correctness (completely correct).
-        :param expected_duration: An optional field indicating the expected time in seconds for the job to complete.
-            This can highlight if the job's execution was slower than expected, suggesting performance issues
-            on executor side.
-        """
-        data = {
-            "result_correctness": result_correctness,
-        }
-        if expected_duration is not None:
-            data["expected_duration"] = expected_duration
-        logger.debug("Submitting feedback for job UUID=%s", self.uuid)
-
-        await self._client._make_request("PUT", f"/jobs/{self.uuid}/feedback/", json=data)
-
     def __repr__(self):
         return f"<{self.__class__.__qualname__}: {self.uuid!r}>"
 

@@ -422,23 +422,3 @@ async def test_wait_for_job__malformed_response(apiver_module, job, httpx_mock, 
 
     with pytest.raises(apiver_module.ComputeHordeError):
         await job.wait()
-
-
-@pytest.mark.asyncio
-async def test_job_submit_feedback(job, httpx_mock):
-    result_correctness = 0.9
-    expected_duration = 10.0
-    feedback = {"result_correctness": result_correctness, "expected_duration": expected_duration}
-    httpx_mock.add_response(method="PUT", url=f"{TEST_FACILITATOR_URL}/jobs/{TEST_JOB_UUID}/feedback/", json=feedback)
-
-    await job.submit_feedback(result_correctness=result_correctness, expected_duration=expected_duration)
-
-    assert json.loads(httpx_mock.get_request().content) == feedback
-
-
-@pytest.mark.asyncio
-async def test_job_submit_feedback__http_error(apiver_module, job, httpx_mock):
-    httpx_mock.add_response(status_code=400)
-
-    with pytest.raises(apiver_module.ComputeHordeError):
-        await job.submit_feedback(result_correctness=0.9, expected_duration=10.0)
