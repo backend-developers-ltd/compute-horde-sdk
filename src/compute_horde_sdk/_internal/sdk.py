@@ -90,8 +90,7 @@ class ComputeHordeClient:
     def __init__(
         self,
         hotkey: bittensor.Keypair,
-        facilitator_token: str,
-        compute_horde_validator_hotkey: str | None = None,
+        compute_horde_validator_hotkey: str,
         job_queue: str | None = None,
         facilitator_url: str = DEFAULT_FACILITATOR_URL,
     ):
@@ -99,9 +98,7 @@ class ComputeHordeClient:
         Create a new Compute Horde client.
 
         :param hotkey: Your wallet hotkey, used for signing requests.
-        :param facilitator_token: Compute Horde Facilitator API token.
         :param compute_horde_validator_hotkey: The hotkey for the validator that your jobs should go to.
-            If unspecified, a validator will be chosen automatically.
         :param job_queue: A user-defined string value that will allow for retrieving all pending jobs,
             for example after process restart, relevant to this process.
         :param facilitator_url: The URL to use for the Compute Horde Facilitator API.
@@ -110,12 +107,7 @@ class ComputeHordeClient:
         self.compute_horde_validator_hotkey = compute_horde_validator_hotkey
         self.job_queue = job_queue
         self.facilitator_url = facilitator_url
-        self.facilitator_token = facilitator_token
-        self._client = httpx.AsyncClient(
-            base_url=self.facilitator_url,
-            headers={"Authorization": f"Token {self.facilitator_token}"},
-            follow_redirects=True,
-        )
+        self._client = httpx.AsyncClient(base_url=self.facilitator_url, follow_redirects=True)
         self._signer = BittensorWalletSigner(hotkey)
 
     async def _make_request(

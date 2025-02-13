@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from compute_horde_sdk._internal.sdk import ComputeHordeClient, ComputeHordeJob
 
 TEST_FACILITATOR_URL = "http://localhost:4321/api/v1"
-TEST_FACILITATOR_TOKEN = "secret-token-12345"
 TEST_JOB_UUID = "1c4904f0-b614-4e27-8e50-7bfc5ddab8fd"
 TEST_DOCKER_IMAGE = "example-com/test-image"
 
@@ -80,7 +79,6 @@ def compute_horde_client(keypair, apiver_module) -> "ComputeHordeClient":
         compute_horde_validator_hotkey="abcdef",
         job_queue="sn123",
         facilitator_url=TEST_FACILITATOR_URL,
-        facilitator_token=TEST_FACILITATOR_TOKEN,
     )
 
 
@@ -105,7 +103,6 @@ async def test_job_e2e(apiver_module, httpx_mock, keypair, async_sleep_mock):
 
     client: ComputeHordeClient = apiver_module.ComputeHordeClient(
         hotkey=keypair,
-        facilitator_token=TEST_FACILITATOR_TOKEN,
         compute_horde_validator_hotkey="abcdef",
         job_queue="sn123",
         facilitator_url=TEST_FACILITATOR_URL,

@@ -9,8 +9,6 @@ pip install compute-horde-sdk
 
 ## Usage
 
-Register at https://facilitator.computehorde.io and generate an API token.
-
 > [!IMPORTANT]
 > This package uses [ApiVer](#versioning), make sure to import `compute_horde_sdk.v1`.
 
@@ -25,7 +23,7 @@ wallet = bittensor.wallet(name="...", hotkey="...")
 
 compute_horde_client = ComputeHordeClient(
     hotkey=wallet.hotkey,
-    facilitator_token="MY_COMPUTE_HORDE_FACILITATOR_API_TOKEN",
+    compute_horde_validator_hotkey="...",  # In the common case it's going to be the same as the ss58 address of the hotkey above.
 )
 
 async def main():
@@ -54,7 +52,6 @@ wallet = bittensor.wallet(name="...", hotkey="...")
 
 compute_horde_client = ComputeHordeClient(
     hotkey=wallet.hotkey,
-    facilitator_token="MY_COMPUTE_HORDE_FACILITATOR_API_TOKEN",
     compute_horde_validator_hotkey="...",  # In the common case it's going to be the same as the ss58 address of the hotkey above.
 )
 
