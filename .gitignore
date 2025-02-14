@@ -14,3 +14,4 @@ media/
 .terraform/
 .nox/
 __pycache__
+build/

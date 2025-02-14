@@ -22,6 +22,7 @@ dependencies = [
     "pydantic<3,>=2.10",
     "httpx>=0.27.0",
     "bittensor<9,>=8.0.0",
+    "sphinx-rtd-theme>=3.0.2",
 ]
 
 [project.urls]
