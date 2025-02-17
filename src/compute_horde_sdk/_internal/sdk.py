@@ -1,9 +1,11 @@
 import asyncio
+import json
 import logging
 import time
 from collections.abc import AsyncIterator, Mapping, Sequence
 from datetime import timedelta
 from typing import Self
+from urllib.parse import urljoin
 
 import bittensor
 import httpx
@@ -26,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 JOB_REFRESH_INTERVAL = timedelta(seconds=3)
 
-DEFAULT_FACILITATOR_URL = "https://facilitator.computehorde.io/api/v1/"
+DEFAULT_FACILITATOR_URL = "https://facilitator.computehorde.io/"
 
 
 class ComputeHordeJob:
@@ -122,7 +124,14 @@ class ComputeHordeClient:
         """
         :return: Response content as string.
         """
-        request = self._client.build_request(method=method, url=url, json=json, params=params, headers=headers)
+        auth_headers = self._get_authentication_headers(method, urljoin(self.facilitator_url, url))
+        request = self._client.build_request(
+            method=method,
+            url=url,
+            json=json,
+            params=params,
+            headers={**headers, **auth_headers} if headers else auth_headers,
+        )
         logger.debug("%s %s", method, request.url)
         response = await self._client.send(request)
         try:
@@ -139,6 +148,29 @@ class ComputeHordeClient:
         signed_fields = SignedFields.from_facilitator_sdk_json(data)
         signature = self._signer.sign(payload=signed_fields.model_dump_json())
         return signature_to_headers(signature)
+
+    def _get_authentication_headers(
+        self,
+        method: str,
+        url: str,
+    ):
+        headers = {
+            'Realm': 'mainnet',
+            'SubnetID': '12',
+            'Nonce': str(time.time()),
+            'Hotkey': self.hotkey.ss58_address,
+        }
+
+        headers_str = json.dumps(headers, sort_keys=True)
+
+        data_to_sign = f"{method}{url}{headers_str}".encode()
+
+        signature = self.hotkey.sign(
+            data_to_sign,
+        ).hex()
+        headers["Signature"] = signature
+
+        return headers
 
     async def create_job(
         self,
@@ -214,7 +246,7 @@ class ComputeHordeClient:
         logger.debug("Creating job from image %s", docker_image)
         signature_headers = self._get_signature_headers(data)
 
-        response = await self._make_request("POST", "/job-docker/", json=data, headers=signature_headers)
+        response = await self._make_request("POST", "/api/v1/job-docker/", json=data, headers=signature_headers)
 
         try:
             job_response = FacilitatorJobResponse.model_validate_json(response)
@@ -236,7 +268,7 @@ class ComputeHordeClient:
         """
         logger.debug("Fetching job with UUID=%s", job_uuid)
 
-        response = await self._make_request("GET", f"/jobs/{job_uuid}/")
+        response = await self._make_request("GET", f"/api/v1/jobs/{job_uuid}/")
 
         try:
             job_response = FacilitatorJobResponse.model_validate_json(response)
@@ -248,7 +280,7 @@ class ComputeHordeClient:
     async def _get_jobs_page(self, page: int = 1, page_size: int = 10) -> FacilitatorJobsResponse:
         params = {"page": page, "page_size": page_size}
 
-        response = await self._make_request("GET", "/jobs/", params=params)
+        response = await self._make_request("GET", "/api/v1/jobs/", params=params)
 
         try:
             jobs_response = FacilitatorJobsResponse.model_validate_json(response)
