@@ -191,6 +191,7 @@ class ComputeHordeClient:
         output_volumes: Mapping[str, OutputVolume] | None = None,
         run_cross_validation: bool = False,
         trusted_output_volumes: Mapping[str, OutputVolume] | None = None,
+        on_trusted_miner: bool = False,
     ) -> ComputeHordeJob:
         """
         Create a new job to run in the Compute Horde.
@@ -217,6 +218,7 @@ class ComputeHordeClient:
         :param run_cross_validation: Whether to run cross validation on a trusted miner.
         :param trusted_output_volumes: Output volumes for cross validation on a trusted miner.
             If these are omitted then cross validating on a trusted miner will not result in any uploads.
+        :param on_trusted_miner: If true, the job will be run on the sn12 validator's trusted miner.
         :return: A ``ComputeHordeJob`` class instance representing the created job.
         """
 
@@ -235,6 +237,7 @@ class ComputeHordeClient:
             "env": env or {},  # type: ignore
             "use_gpu": True,
             "artifacts_dir": artifacts_dir,
+            "on_trusted_miner": on_trusted_miner,
         }
         if input_volumes is not None:
             data["volumes"] = [
