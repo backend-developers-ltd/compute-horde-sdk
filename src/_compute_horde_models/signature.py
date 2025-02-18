@@ -33,7 +33,7 @@ class SignedFields(BaseModel):
     executor_class: str
     docker_image: str
     raw_script: str
-    args: str
+    args: list[str]
     env: dict[str, str]
     use_gpu: bool
     artifacts_dir: str
@@ -49,7 +49,7 @@ class SignedFields(BaseModel):
             executor_class=str(data.get("executor_class")),
             docker_image=str(data.get("docker_image", "")),
             raw_script=str(data.get("raw_script", "")),
-            args=str(data.get("args", "")),
+            args=data.get("args", []),
             env=typing.cast(dict[str, str], data.get("env", None)),
             use_gpu=typing.cast(bool, data.get("use_gpu")),
             volumes=typing.cast(list[JsonValue], data.get("volumes", [])),
