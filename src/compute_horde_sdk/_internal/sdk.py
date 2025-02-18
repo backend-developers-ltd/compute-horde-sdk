@@ -77,7 +77,7 @@ class ComputeHordeJob:
     @classmethod
     def _from_response(cls, client: "ComputeHordeClient", response: FacilitatorJobResponse) -> Self:
         result = None
-        if response.status == ComputeHordeJobStatus.COMPLETED:
+        if not response.status.is_in_progress():
             # TODO: Handle base64 decode errors
             result = ComputeHordeJobResult(stdout=response.stdout, artifacts={
                 path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()
@@ -189,7 +189,6 @@ class ComputeHordeClient:
         input_volumes: Mapping[str, InputVolume] | None = None,
         output_volumes: Mapping[str, OutputVolume] | None = None,
         run_cross_validation: bool = False,
-        deposition_comparison_method: str | None = None,  # TODO: Which type?
         trusted_output_volumes: Mapping[str, OutputVolume] | None = None,
     ) -> ComputeHordeJob:
         """
@@ -215,8 +214,6 @@ class ComputeHordeClient:
             The values should be ``OutputVolume`` instances representing how to handle the output data.
             For now, output volume paths must start with ``/output/``.
         :param run_cross_validation: Whether to run cross validation on a trusted miner.
-        :param deposition_comparison_method: The method to use to compare the original job result
-            with the one obtained from the trusted miner.
         :param trusted_output_volumes: Output volumes for cross validation on a trusted miner.
             If these are omitted then cross validating on a trusted miner will not result in any uploads.
         :return: A ``ComputeHordeJob`` class instance representing the created job.
@@ -236,6 +233,7 @@ class ComputeHordeClient:
             "args": " ".join(args or []),
             "env": env or {},  # type: ignore
             "use_gpu": True,
+            "artifacts_dir": artifacts_dir,
         }
         if input_volumes is not None:
             data["volumes"] = [
