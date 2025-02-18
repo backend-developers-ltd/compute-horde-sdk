@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import logging
 import time
@@ -75,7 +76,12 @@ class ComputeHordeJob:
 
     @classmethod
     def _from_response(cls, client: "ComputeHordeClient", response: FacilitatorJobResponse) -> Self:
-        result = ComputeHordeJobResult(stdout=response.stdout) if response.stdout else None
+        result = None
+        if response.status == ComputeHordeJobStatus.COMPLETED:
+            # TODO: Handle base64 decode errors
+            result = ComputeHordeJobResult(stdout=response.stdout, artifacts={
+                path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()
+            })
         return cls(
             client,
             uuid=response.uuid,

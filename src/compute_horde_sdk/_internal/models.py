@@ -27,6 +27,7 @@ class ComputeHordeJobStatus(StrEnum):
 @dataclass
 class ComputeHordeJobResult:
     stdout: str
+    artifacts: dict[str, bytes]
 
 
 class FacilitatorJobResponse(pydantic.BaseModel):
@@ -49,6 +50,7 @@ class FacilitatorJobResponse(pydantic.BaseModel):
     volumes: list = []
     uploads: list = []
     # target_validator_hotkey: str
+    artifacts: dict = {}
 
 
 class FacilitatorJobsResponse(pydantic.BaseModel):
