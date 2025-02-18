@@ -18,6 +18,7 @@ CI = os.environ.get("CI") is not None
 ROOT = Path(".")
 MAIN_BRANCH_NAME = "master"
 PYTHON_VERSIONS = ["3.11", "3.12"]
+BITTENSOR_VERSION = os.environ.get("BITTENSOR_VERSION")
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 nox.options.default_venv_backend = "venv"
@@ -43,6 +44,8 @@ def install(session: nox.Session, *groups, dev: bool = True, editable: bool = Fa
     for group in groups:
         other_args.extend(["--group", group])
     session.run("pdm", "install", "--check", *other_args, external=True)
+    if BITTENSOR_VERSION:
+        session.run("pip", "install", f"bittensor=={BITTENSOR_VERSION}")
 
 
 @functools.lru_cache
