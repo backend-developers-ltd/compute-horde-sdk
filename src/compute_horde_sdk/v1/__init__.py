@@ -13,6 +13,7 @@ from compute_horde_sdk._internal.models import (
     InputVolume,
     HTTPInputVolume,
     HuggingfaceInputVolume,
+    InlineInputVolume,
     OutputVolume,
     HTTPOutputVolume,
 )

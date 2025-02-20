@@ -46,7 +46,7 @@ Advanced example:
 ```python
 import asyncio
 import bittensor
-from compute_horde_sdk.v1 import ComputeHordeClient, ExecutorClass, HuggingfaceInputVolume, HTTPInputVolume, HTTPOutputVolume
+from compute_horde_sdk.v1 import ComputeHordeClient, ExecutorClass, InlineInputVolume, HuggingfaceInputVolume, HTTPInputVolume, HTTPOutputVolume
 
 wallet = bittensor.wallet(name="...", hotkey="...")
 
@@ -67,6 +67,9 @@ async def main():
         input_volumes={
             "/volume/models/model01": HuggingfaceInputVolume(
                 repo_id="my-username/my-model",
+            ),
+            "/volume/data/version.txt": InlineInputVolume(
+                contents="dmVyc2lvbj0y",
             ),
             "/volume/data/dataset.json": HTTPInputVolume(
                 url="https://my-dataset-bucket.s3.amazonaws.com/sample-dataset/data.json",

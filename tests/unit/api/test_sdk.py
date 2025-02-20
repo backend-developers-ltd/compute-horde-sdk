@@ -290,6 +290,7 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
         artifacts_dir="/artifacts",
         input_volumes={
             "/volume/models/model01": apiver_module.HuggingfaceInputVolume(repo_id="myrepo/mymodel"),
+            "/volume/version.txt": apiver_module.InlineInputVolume(contents="dmVyc2lvbj0y"),
             "/volume/dataset.json": apiver_module.HTTPInputVolume(
                 url="https://s3.aws.something.com/mybucket/myfile.json"
             ),
@@ -321,6 +322,11 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
             "repo_type": None,
             "revision": None,
             "allow_patterns": None,
+        },
+        {
+            "volume_type": "inline",
+            "relative_path": "version.txt",
+            "contents": "dmVyc2lvbj0y",
         },
         {
             "volume_type": "single_file",

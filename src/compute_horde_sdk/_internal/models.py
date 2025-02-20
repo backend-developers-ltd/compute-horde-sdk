@@ -71,6 +71,22 @@ class AbstractInputVolume(ABC):
         pass
 
 
+class InlineInputVolume(pydantic.BaseModel, AbstractInputVolume):
+    """
+    Volume for inline base64 encoded files.
+    """
+
+    contents: str
+    """Base64 encoded contents of the file"""
+
+    def to_compute_horde_volume(self, mount_path: str) -> compute_horde_volume.InlineVolume:
+        relative_path = self.get_volume_relative_path(mount_path)
+        return compute_horde_volume.InlineVolume(
+            contents=self.contents,
+            relative_path=relative_path,
+        )
+
+
 class HuggingfaceInputVolume(pydantic.BaseModel, AbstractInputVolume):
     """
     Volume for downloading resources from Huggingface.
@@ -117,7 +133,7 @@ class HTTPInputVolume(pydantic.BaseModel, AbstractInputVolume):
         )
 
 
-InputVolume = HuggingfaceInputVolume | HTTPInputVolume
+InputVolume = InlineInputVolume | HuggingfaceInputVolume | HTTPInputVolume
 
 
 class HTTPOutputVolume(pydantic.BaseModel):
