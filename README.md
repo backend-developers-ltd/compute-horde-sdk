@@ -33,9 +33,9 @@ async def main():
         job_namespace="SN123.0",
         docker_image="my-username/my-image:latest",
     )
-    
+
     await job.wait(timeout=10 * 60)
-    
+
     print(job.status)  # Should be "Completed".
 
 asyncio.run(main())
@@ -79,9 +79,9 @@ async def main():
             ),
         },
     )
-    
+
     await job.wait(timeout=10 * 60)
-    
+
     print(job.status)  # Should be "Completed".
     print(job.result)
 

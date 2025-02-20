@@ -79,9 +79,10 @@ class ComputeHordeJob:
         result = None
         if not response.status.is_in_progress():
             # TODO: Handle base64 decode errors
-            result = ComputeHordeJobResult(stdout=response.stdout, artifacts={
-                path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()
-            })
+            result = ComputeHordeJobResult(
+                stdout=response.stdout,
+                artifacts={path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()},
+            )
         return cls(
             client,
             uuid=response.uuid,
@@ -161,10 +162,10 @@ class ComputeHordeClient:
         url: str,
     ):
         headers = {
-            'Realm': 'mainnet',
-            'SubnetID': '12',
-            'Nonce': str(time.time()),
-            'Hotkey': self.hotkey.ss58_address,
+            "Realm": "mainnet",
+            "SubnetID": "12",
+            "Nonce": str(time.time()),
+            "Hotkey": self.hotkey.ss58_address,
         }
 
         headers_str = json.dumps(headers, sort_keys=True)
