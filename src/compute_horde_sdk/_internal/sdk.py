@@ -147,7 +147,7 @@ class ComputeHordeClient:
             logger.error("Response status=%d: %s", e.response.status_code, e.response.text)
             if e.response.status_code == 404:
                 raise ComputeHordeNotFoundError(f"Resource under {request.url} not found") from e
-            raise ComputeHordeError(f"Compute Horde responded with status code {e.response.status_code}") from e
+            raise ComputeHordeError(f"Compute Horde responded with status={e.response.status_code}, content={e.response.content}") from e
 
         return response.text
 
@@ -231,7 +231,7 @@ class ComputeHordeClient:
             "target_validator_hotkey": self.compute_horde_validator_hotkey,
             "executor_class": executor_class,
             "docker_image": docker_image,
-            "args": " ".join(args or []),
+            "args": args or [],
             "env": env or {},  # type: ignore
             "use_gpu": True,
             "artifacts_dir": artifacts_dir,
