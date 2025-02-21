@@ -79,9 +79,10 @@ class ComputeHordeJob:
         result = None
         if not response.status.is_in_progress():
             # TODO: Handle base64 decode errors
-            result = ComputeHordeJobResult(stdout=response.stdout, artifacts={
-                path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()
-            })
+            result = ComputeHordeJobResult(
+                stdout=response.stdout,
+                artifacts={path: base64.b64decode(base64_data) for path, base64_data in response.artifacts.items()},
+            )
         return cls(
             client,
             uuid=response.uuid,
@@ -161,10 +162,10 @@ class ComputeHordeClient:
         url: str,
     ):
         headers = {
-            'Realm': 'mainnet',
-            'SubnetID': '12',
-            'Nonce': str(time.time()),
-            'Hotkey': self.hotkey.ss58_address,
+            "Realm": "mainnet",
+            "SubnetID": "12",
+            "Nonce": str(time.time()),
+            "Hotkey": self.hotkey.ss58_address,
         }
 
         headers_str = json.dumps(headers, sort_keys=True)
@@ -250,7 +251,7 @@ class ComputeHordeClient:
         logger.debug("Creating job from image %s", docker_image)
         signature_headers = self._get_signature_headers(data)
 
-        response = await self._make_request("POST", "/api/v1/job-docker/", json=data, headers=signature_headers)
+        response = await self._make_request("POST", "/job-docker/", json=data, headers=signature_headers)
 
         try:
             job_response = FacilitatorJobResponse.model_validate_json(response)
@@ -272,7 +273,7 @@ class ComputeHordeClient:
         """
         logger.debug("Fetching job with UUID=%s", job_uuid)
 
-        response = await self._make_request("GET", f"/api/v1/jobs/{job_uuid}/")
+        response = await self._make_request("GET", f"/jobs/{job_uuid}/")
 
         try:
             job_response = FacilitatorJobResponse.model_validate_json(response)
@@ -284,7 +285,7 @@ class ComputeHordeClient:
     async def _get_jobs_page(self, page: int = 1, page_size: int = 10) -> FacilitatorJobsResponse:
         params = {"page": page, "page_size": page_size}
 
-        response = await self._make_request("GET", "/api/v1/jobs/", params=params)
+        response = await self._make_request("GET", "/jobs/", params=params)
 
         try:
             jobs_response = FacilitatorJobsResponse.model_validate_json(response)

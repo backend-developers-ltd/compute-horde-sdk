@@ -54,7 +54,7 @@ class SignedFields(BaseModel):
             use_gpu=typing.cast(bool, data.get("use_gpu")),
             volumes=typing.cast(list[JsonValue], data.get("volumes", [])),
             uploads=typing.cast(list[JsonValue], data.get("uploads", [])),
-            artifacts_dir=typing.cast(str, data.get("artifacts_dir", "")),
+            artifacts_dir=typing.cast(str, data.get("artifacts_dir") or ""),
         )
         return signed_fields
 

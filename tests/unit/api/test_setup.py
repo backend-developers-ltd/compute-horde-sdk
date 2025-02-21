@@ -10,6 +10,7 @@ def test_apiver_exports(apiver_module):
         "HTTPInputVolume",
         "HTTPOutputVolume",
         "HuggingfaceInputVolume",
+        "InlineInputVolume",
         "InputVolume",
         "OutputVolume",
     }
