@@ -28,7 +28,7 @@ def get_job_response(uuid: str = TEST_JOB_UUID, status: str = "Accepted", **kwar
         "status": status,
         "docker_image": TEST_DOCKER_IMAGE,
         "raw_script": None,
-        "args": "--test yes",
+        "args": ["--test", "yes"],
         "env": {},
         "use_gpu": True,
         "hf_repo_id": None,
@@ -274,7 +274,7 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
             uuid=TEST_JOB_UUID,
             status="Accepted",
             docker_image="my-image",
-            args="--arg1 value1",
+            args=["--arg1", "value1"],
             env={"ENV_VAR": "value"},
             use_gpu=True,
             input_url="https://example.com/input",
@@ -312,7 +312,7 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
     req_json = json.loads(request.content)
     assert req_json["executor_class"] == "spin_up-4min.gpu-24gb"
     assert req_json["docker_image"] == TEST_DOCKER_IMAGE
-    assert req_json["args"] == "--block 10000"
+    assert req_json["args"] == ["--block", "10000"]
     assert req_json["env"] == {"TEST_ENV": "1"}
     assert req_json["volumes"] == [
         {
