@@ -14,7 +14,7 @@ from _compute_horde_models.signature import (
 if TYPE_CHECKING:
     from compute_horde_sdk._internal.sdk import ComputeHordeClient, ComputeHordeJob
 
-TEST_FACILITATOR_URL = "http://localhost:4321/api/v1"
+TEST_FACILITATOR_URL = "http://localhost:4321"
 TEST_JOB_UUID = "1c4904f0-b614-4e27-8e50-7bfc5ddab8fd"
 TEST_DOCKER_IMAGE = "example-com/test-image"
 
@@ -94,7 +94,7 @@ def job(apiver_module, compute_horde_client) -> "ComputeHordeJob":
 @pytest.mark.asyncio
 async def test_job_e2e(apiver_module, httpx_mock, keypair, async_sleep_mock):
     httpx_mock.add_response(
-        url=TEST_FACILITATOR_URL + "/job-docker/",
+        url=TEST_FACILITATOR_URL + "/api/v1/job-docker/",
         json=get_job_response(
             info=TEST_JOB_UUID,
             status="Sent",
@@ -187,14 +187,14 @@ async def test_iter_jobs(apiver_module, compute_horde_client, httpx_mock):
         json={
             "count": 11,
             "previous": None,
-            "next": f"{TEST_FACILITATOR_URL}/jobs/?page=2",
+            "next": f"{TEST_FACILITATOR_URL}/api/v1/jobs/?page=2",
             "results": [get_job_response(uuid=job1_uuid, status=job1_status) for _ in range(10)],
         }
     )
     httpx_mock.add_response(
         json={
             "count": 11,
-            "previous": f"{TEST_FACILITATOR_URL}/jobs/?page=1",
+            "previous": f"{TEST_FACILITATOR_URL}/api/v1/jobs/?page=1",
             "next": None,
             "results": [
                 get_job_response(uuid=job2_uuid, status=job2_status),
