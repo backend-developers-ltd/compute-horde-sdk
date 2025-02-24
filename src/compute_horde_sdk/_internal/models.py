@@ -38,7 +38,7 @@ class FacilitatorJobResponse(pydantic.BaseModel):
     status: ComputeHordeJobStatus
     docker_image: str
     # raw_script: str
-    args: str
+    args: list[str]
     env: dict
     # use_gpu: bool
     # hf_repo_id: str

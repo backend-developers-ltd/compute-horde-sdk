@@ -231,7 +231,7 @@ class ComputeHordeClient:
             "target_validator_hotkey": self.compute_horde_validator_hotkey,
             "executor_class": executor_class,
             "docker_image": docker_image,
-            "args": " ".join(args or []),
+            "args": args or [],  # type: ignore
             "env": env or {},  # type: ignore
             "use_gpu": True,
             "artifacts_dir": artifacts_dir,
