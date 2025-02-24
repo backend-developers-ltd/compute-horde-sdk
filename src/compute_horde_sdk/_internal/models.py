@@ -1,3 +1,6 @@
+import base64
+import io
+import zipfile
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -84,6 +87,19 @@ class InlineInputVolume(pydantic.BaseModel, AbstractInputVolume):
         return compute_horde_volume.InlineVolume(
             contents=self.contents,
             relative_path=relative_path,
+        )
+
+    @classmethod
+    def from_file_contents(cls, filename: str, contents: bytes):
+        in_memory_output = io.BytesIO()
+        zipf = zipfile.ZipFile(in_memory_output, "w")
+        zipf.writestr(filename, contents)
+        zipf.close()
+        in_memory_output.seek(0)
+        zip_contents = in_memory_output.read()
+        encoded_zip_contents = base64.b64encode(zip_contents).decode()
+        return cls(
+            contents=encoded_zip_contents,
         )
 
 

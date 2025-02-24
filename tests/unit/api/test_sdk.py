@@ -281,6 +281,8 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
         )
     )
 
+    inline_volume = apiver_module.InlineInputVolume.from_file_contents("version.txt", "version=1")
+
     job = await compute_horde_client.create_job(
         executor_class=apiver_module.ExecutorClass.spin_up_4min__gpu_24gb,
         job_namespace="SN123.0",
@@ -290,7 +292,7 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
         artifacts_dir="/artifacts",
         input_volumes={
             "/volume/models/model01": apiver_module.HuggingfaceInputVolume(repo_id="myrepo/mymodel"),
-            "/volume/version.txt": apiver_module.InlineInputVolume(contents="dmVyc2lvbj0y"),
+            "/volume/version.zip": inline_volume,
             "/volume/dataset.json": apiver_module.HTTPInputVolume(
                 url="https://s3.aws.something.com/mybucket/myfile.json"
             ),
@@ -325,8 +327,8 @@ async def test_create_job(apiver_module, compute_horde_client, httpx_mock):
         },
         {
             "volume_type": "inline",
-            "relative_path": "version.txt",
-            "contents": "dmVyc2lvbj0y",
+            "relative_path": "version.zip",
+            "contents": inline_volume.contents,
         },
         {
             "volume_type": "single_file",
