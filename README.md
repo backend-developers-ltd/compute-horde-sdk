@@ -68,8 +68,8 @@ async def main():
             "/volume/models/model01": HuggingfaceInputVolume(
                 repo_id="my-username/my-model",
             ),
-            "/volume/data/version.txt": InlineInputVolume(
-                contents="dmVyc2lvbj0y",
+            "/volume/data": InlineInputVolume.from_file_contents(
+                "version.txt", b"0.1.0"
             ),
             "/volume/data/dataset.json": HTTPInputVolume(
                 url="https://my-dataset-bucket.s3.amazonaws.com/sample-dataset/data.json",
